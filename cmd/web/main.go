@@ -1,24 +1,50 @@
 package main
 
 import (
+	"flag"
+	"github.com/pyhita/snippetbox/cmd/web/handlers"
 	"log"
 	"net/http"
+	"os"
 )
+
+type config struct {
+	addr      string
+	staticDir string
+}
 
 func main() {
 
-	// match url and handler
-	mux := http.NewServeMux()
+	//addr := flag.String("addr", ":4000", "HTTP listen address")
+	var cfg config
+	flag.StringVar(&cfg.addr, "addr", ":4000", "http service address")
+	flag.StringVar(&cfg.staticDir, "static", "./static", "http service static dir")
 
-	fileServer := http.FileServer(http.Dir("./ui/static"))
-	// register the file server
-	mux.Handle("/static/", http.StripPrefix("/static/", fileServer))
+	flag.Parse()
 
-	mux.HandleFunc("/", home)
-	mux.HandleFunc("/snippet/view", snippetView)
-	mux.HandleFunc("/snippet/create", snippetCreate)
+	//f, err := os.OpenFile("/tmp/info.log", os.O_RDWR|os.O_CREATE, 0666)
+	//if err != nil {
+	//	log.Fatal(err)
+	//}
+	//defer f.Close()
+	//// 记录 Info log 到文件中
+	//infoLog := log.New(f, "INFO\t", log.Ldate|log.Ltime)
+	infoLog := log.New(os.Stdout, "INFO\t", log.Ldate|log.Ltime)
+	errorLog := log.New(os.Stderr, "ERROR\t", log.Ldate|log.Ltime|log.Lshortfile)
 
-	log.Print("Starting server on :4000")
-	err := http.ListenAndServe(":4000", mux)
-	log.Fatal(err)
+	application := &handlers.Application{
+		InfoLog:  infoLog,
+		ErrorLog: errorLog,
+	}
+
+	// 创建自定义的http server，以便于可以自定义log 记录
+	srv := &http.Server{
+		Addr:     cfg.addr,
+		Handler:  application.Routes(),
+		ErrorLog: errorLog,
+	}
+
+	infoLog.Printf("Starting server on %s", cfg.addr)
+	err := srv.ListenAndServe()
+	errorLog.Fatal(err)
 }
