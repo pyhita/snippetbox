@@ -3,6 +3,7 @@ package handlers
 import (
 	"errors"
 	"fmt"
+	"html/template"
 	"net/http"
 	"strconv"
 
@@ -45,7 +46,27 @@ func (a *Application) SnippetView(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fmt.Fprintf(w, "Display specific snippet %v", snippet)
+	files := []string{
+		"./ui/html/base.tmpl",
+		"./ui/html/pages/view.tmpl",
+		"./ui/html/partials/nav.tmpl",
+	}
+	// parse the template files
+	ts, err := template.ParseFiles(files...)
+	if err != nil {
+		a.serverError(w, err)
+		return
+	}
+
+	// 将所有需要传递给模板的数据封装到 templateData中
+	data := &templateData{
+		Snippet: snippet,
+	}
+
+	err = ts.ExecuteTemplate(w, "base", data)
+	if err != nil {
+		a.serverError(w, err)
+	}
 }
 
 func (a *Application) SnippetCreate(w http.ResponseWriter, r *http.Request) {
