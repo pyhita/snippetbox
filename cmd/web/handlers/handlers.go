@@ -1,10 +1,12 @@
 package handlers
 
 import (
+	"errors"
 	"fmt"
-	"html/template"
 	"net/http"
 	"strconv"
+
+	"github.com/pyhita/snippetbox/internal/models"
 )
 
 func (a *Application) Home(w http.ResponseWriter, r *http.Request) {
@@ -14,23 +16,14 @@ func (a *Application) Home(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// render home html file
-	files := []string{
-		"./ui/html/base.tmpl",
-		"./ui/html/pages/home.tmpl",
-		"./ui/html/partials/nav.tmpl",
-	}
-	ts, err := template.ParseFiles(files...)
+	snippets, err := a.Snippets.Latest()
 	if err != nil {
-		a.ErrorLog.Println(err.Error())
 		a.serverError(w, err)
 		return
 	}
 
-	err = ts.ExecuteTemplate(w, "base", nil)
-	if err != nil {
-		a.ErrorLog.Println(err.Error())
-		a.serverError(w, err)
+	for _, snippet := range snippets {
+		fmt.Fprintf(w, "<h1>Snippet %s</h1>", snippet.Title)
 	}
 }
 
@@ -42,7 +35,17 @@ func (a *Application) SnippetView(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fmt.Fprintf(w, "Display specific snippet with ID %d", id)
+	snippet, err := a.Snippets.Get(id)
+	if err != nil {
+		if errors.Is(err, models.ErrNotFound) {
+			a.notFound(w)
+		} else {
+			a.serverError(w, err)
+		}
+		return
+	}
+
+	fmt.Fprintf(w, "Display specific snippet %v", snippet)
 }
 
 func (a *Application) SnippetCreate(w http.ResponseWriter, r *http.Request) {
