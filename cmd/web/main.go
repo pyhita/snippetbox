@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/pyhita/snippetbox/cmd/web/handlers"
 	"github.com/pyhita/snippetbox/internal/models"
 
 	_ "github.com/go-sql-driver/mysql" // New import
@@ -38,7 +37,7 @@ func main() {
 	}
 	defer db.Close()
 
-	application := &handlers.Application{
+	application := &Application{
 		InfoLog:  infoLog,
 		ErrorLog: errLog,
 		Snippets: &models.SnippetModel{DB: db},

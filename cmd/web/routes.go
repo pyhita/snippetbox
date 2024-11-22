@@ -1,10 +1,13 @@
-package handlers
+package main
 
-import "net/http"
+import (
+	"net/http"
+
+	"github.com/justinas/alice"
+)
 
 // 统一注册路由
-
-func (a *Application) Routes() *http.ServeMux {
+func (a *Application) Routes() http.Handler {
 
 	// match url and handler
 	mux := http.NewServeMux()
@@ -17,5 +20,8 @@ func (a *Application) Routes() *http.ServeMux {
 	mux.HandleFunc("/snippet/view", a.SnippetView)
 	mux.HandleFunc("/snippet/create", a.SnippetCreate)
 
-	return mux
+	// Create a middleware chain containing our 'standard' middlewares
+	standard := alice.New(a.recoverPanic, a.logRequest, a.secureHeader)
+
+	return standard.Then(mux)
 }
