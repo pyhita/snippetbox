@@ -7,16 +7,12 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/julienschmidt/httprouter"
+
 	"github.com/pyhita/snippetbox/internal/models"
 )
 
 func (a *Application) Home(w http.ResponseWriter, r *http.Request) {
-	// Check if the current request URL path exactly matches "/".
-	if r.URL.Path != "/" {
-		http.NotFound(w, r)
-		return
-	}
-
 	snippets, err := a.Snippets.Latest()
 	if err != nil {
 		a.serverError(w, err)
@@ -29,8 +25,9 @@ func (a *Application) Home(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *Application) SnippetView(w http.ResponseWriter, r *http.Request) {
-	// read snippet id from query string
-	id, err := strconv.Atoi(r.URL.Query().Get("id"))
+	params := httprouter.ParamsFromContext(r.Context())
+
+	id, err := strconv.Atoi(params.ByName("id"))
 	if err != nil || id < 1 {
 		a.notFound(w)
 		return
